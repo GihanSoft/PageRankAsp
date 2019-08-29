@@ -1,0 +1,154 @@
+﻿@model AspPageRank.Models.ResultData
+@{
+    ViewBag.Title = "Result";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .links line {
+        stroke: #999;
+        stroke-opacity: 0.6;
+    }
+
+    .nodes circle {
+        stroke: #fff;
+        stroke-width: 1.5px;
+    }
+</style>
+
+<h2>Result</h2>
+<h3>@Model.spidingSite</h3>
+<button id="btnStop" class="btn btn-default">stop</button>
+<button id="btnStart" class="btn btn-default">remorse</button>
+<br />
+<button id="btnStopSpider" class="btn btn-default">StopSpider</button>
+<br />
+<svg width="960" height="600"></svg>
+
+<script src="~/Scripts/d3/d3.js"></script>
+<script src="~/Scripts/jquery-1.10.2.intellisense.js"></script>
+<script src="~/Scripts/jquery-1.10.2.js"></script>
+
+<script>
+    $(document).ready(update);
+    var loopId;
+
+    loopId = setInterval(update, 500);
+
+    $("#btnStop").click(function () {
+        clearInterval(loopId);
+    });
+
+    $("#btnStart").click(function () {
+        loopId = setInterval(update, 500);
+    });
+
+    $("#btnStopSpider").click(
+        function () {
+            clearInterval(loopId);
+            var xhttp = new XMLHttpRequest();
+            xhttp.open("GET", "StopSpider/" + @Model.spiderId, true);
+            xhttp.send();
+        }
+    )
+
+    var old_arr;
+
+    function update() {
+
+        var xhttp = new XMLHttpRequest();
+        xhttp.open("GET", "GetMatrix/" + @Model.spiderId, false);
+        xhttp.send();
+
+        var arr = xhttp.response;
+
+        if (old_arr == arr)
+            return;
+
+        old_arr = arr;
+
+        $("svg").empty();
+        var graph = JSON.parse(arr);
+
+        var svg = d3.select("svg"),
+            width = +svg.attr("width"),
+            height = +svg.attr("height");
+
+        var color = d3.scaleOrdinal(d3.schemeCategory20);
+
+        var simulation = d3.forceSimulation()
+            .force("link", d3.forceLink().id(function (d) { return d.id; }))
+            .force("charge", d3.forceManyBody())
+            .force("center", d3.forceCenter(width / 2, height / 2));
+
+
+        var link = svg.append("g")
+            .attr("class", "links")
+            .selectAll("line")
+            .data(graph.links)
+            .enter().append("line")
+            .attr("stroke-width", function (d) { return Math.sqrt(d.value); });
+
+        var node = svg.append("g")
+            .attr("class", "nodes")
+            .selectAll("circle")
+            .data(graph.nodes)
+            .enter().append("circle")
+            .attr("r", 5)
+            .attr("fill", function (d) { return color(d.group); })
+            .call(d3.drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended));
+
+        node.append("title")
+            .text(function (d) { return d.id; });
+
+        simulation
+            .nodes(graph.nodes)
+            .on("tick", ticked);
+
+        simulation.force("link")
+            .links(graph.links);
+
+        function ticked() {
+            link
+                .attr("x1", function (d) { return d.source.x; })
+                .attr("y1", function (d) { return d.source.y; })
+                .attr("x2", function (d) { return d.target.x; })
+                .attr("y2", function (d) { return d.target.y; });
+
+            node
+                .attr("cx", function (d) { return d.x; })
+                .attr("cy", function (d) { return d.y; });
+        }
+
+        function dragstarted(d) {
+            if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+
+        function dragged(d) {
+            d.fx = d3.event.x;
+            d.fy = d3.event.y;
+        }
+
+        function dragended(d) {
+            if (!d3.event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        }
+    }
+</script>
+
+
+<!--
+
+<svg width="960" height="600"></svg>
+
+<script resource="~/Scripts/d3/d3.js"></script>
+<script>
+
+</script>
+-->

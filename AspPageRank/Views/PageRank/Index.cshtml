@@ -1,0 +1,12 @@
+﻿@{
+    ViewBag.Title = "PageRank";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>PageRankView</h2>
+<br />
+@using (Html.BeginForm())
+{   
+    @Html.TextBox("page","",new { @class = "text-left" })
+    <input type="submit" value="Start" class="btn btn-default" />
+}
